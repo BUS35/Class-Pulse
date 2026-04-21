@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %} · About{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>About {{ app_name }}</h1>
+    <p>
+      {{ app_name }} is a course-based academic interaction system designed to improve
+      classroom engagement with a lightweight, structured workflow:
+      students submit comments/questions during a lecture, and lecturers view and resolve them.
+    </p>
+
+    <h2>Personas</h2>
+    <ul>
+      <li><strong>Student (Learner):</strong> submit comments in real time, get quick feedback, optionally anonymous.</li>
+      <li><strong>Lecturer (Admin/Content Manager):</strong> view, manage, and resolve questions to structure feedback.</li>
+    </ul>
+
+    <h2>Implemented user stories</h2>
+    <ul>
+      <li><strong>US1:</strong> Submit comment (Student)</li>
+      <li><strong>US2:</strong> View confirmation (Student)</li>
+      <li><strong>US3:</strong> View comments list (Lecturer)</li>
+      <li><strong>US4:</strong> Resolve comment (Lecturer)</li>
+    </ul>
+
+    <p class="muted">
+      Note: this is a prototype, meant for coursework demonstration rather than production deployment.
+    </p>
+  </section>
+{% endblock %}

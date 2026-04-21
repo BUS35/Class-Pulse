@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %} · {{ course["code"] }}{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <div class="row between">
+      <div>
+        <h1>{{ course["code"] }} — {{ course["name"] }}</h1>
+        <p class="muted">Manage student comments/questions.</p>
+      </div>
+      <a class="btn secondary" href="{{ url_for('lecturer_dashboard') }}">Back</a>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row gap">
+      <a class="pilllink {% if status=='open' %}active{% endif %}" href="{{ url_for('lecturer_course', course_id=course['id'], status='open') }}">Open</a>
+      <a class="pilllink {% if status=='resolved' %}active{% endif %}" href="{{ url_for('lecturer_course', course_id=course['id'], status='resolved') }}">Resolved</a>
+      <a class="pilllink {% if status=='deleted' %}active{% endif %}" href="{{ url_for('lecturer_course', course_id=course['id'], status='deleted') }}">Deleted</a>
+      <a class="pilllink {% if status=='all' %}active{% endif %}" href="{{ url_for('lecturer_course', course_id=course['id'], status='all') }}">All</a>
+    </div>
+
+    <div class="divider"></div>
+
+    {% if comments %}
+      <div class="table">
+        <div class="trow thead">
+          <div>ID</div>
+          <div>Time</div>
+          <div>Student</div>
+          <div>Content</div>
+          <div>Status</div>
+          <div>Action</div>
+        </div>
+
+        {% for c in comments %}
+          <div class="trow {% if c['status'] == 'deleted' %}row-deleted{% endif %}">
+            <div>#{{ c["id"] }}</div>
+            <div class="small">{{ c["created_at"] }}</div>
+            <div>
+              {% if c["display_name"] and c["display_name"]|trim %}
+                {{ c["display_name"] }}
+              {% else %}
+                Anonymous
+              {% endif %}
+            </div>
+            <div>{{ c["content"] }}</div>
+            <div>
+              <span class="badge {% if c['status']=='open' %}badge-open{% elif c['status']=='resolved' %}badge-resolved{% else %}badge-deleted{% endif %}">
+                {{ c["status"] }}
+              </span>
+              <div class="muted small">❤ {{ c["likes"] }}</div>
+              {% if c["praised"] == 1 %}<div class="praise-badge">Praised Question</div>{% endif %}
+              {% if c["lecturer_note"] %}
+                <div class="lecturer-note-large">Note: {{ c["lecturer_note"] }}</div>
+              {% endif %}
+            </div>
+            <div class="action-stack">
+              {% if c["status"] == "open" %}
+                <form method="post" action="{{ url_for('lecturer_resolve_comment', comment_id=c['id'], status=status) }}" class="form compact">
+                  <input type="hidden" name="course_id" value="{{ course['id'] }}">
+                  <input name="lecturer_note" placeholder="Optional note">
+                  <button class="btn" type="submit">Resolve</button>
+                </form>
+              {% elif c["status"] == "resolved" %}
+                <form method="post" action="{{ url_for('lecturer_reopen_comment', comment_id=c['id'], status=status) }}" class="inline">
+                  <input type="hidden" name="course_id" value="{{ course['id'] }}">
+                  <button class="btn secondary" type="submit">Undo Resolve</button>
+                </form>
+              {% endif %}
+
+              {% if c["status"] != "deleted" %}
+                {% if c["praised"] == 1 %}
+                <form method="post" action="{{ url_for('lecturer_unpraise_comment', comment_id=c['id'], status=status) }}" class="inline">
+                  <input type="hidden" name="course_id" value="{{ course['id'] }}">
+                  <button class="btn secondary" type="submit">Undo Praise</button>
+                </form>
+                {% else %}
+                <form method="post" action="{{ url_for('lecturer_praise_comment', comment_id=c['id'], status=status) }}" class="inline">
+                  <input type="hidden" name="course_id" value="{{ course['id'] }}">
+                  <button class="btn praise" type="submit">Praise</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{{ url_for('delete_comment', comment_id=c['id']) }}" class="inline">
+                  <button class="btn danger" type="submit">Delete</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('undo_delete_comment', comment_id=c['id']) }}" class="inline">
+                  <button class="btn secondary" type="submit">Undo Delete</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No comments found for this filter.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="row between">
+      <h2>Danmaku Wall (Sorted by Likes)</h2>
+      <div class="muted small">View only on the lecturer side; liking is disabled</div>
+    </div>
+    <div id="danmaku-wall" class="wall">Loading…</div>
+  </section>
+
+  <section class="card">
+    <div class="row between">
+      <h2>Praised Students</h2>
+      <div class="muted small">Top praised students in this class</div>
+    </div>
+    <div id="honors-board" class="wall muted">Loading…</div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const courseId = {{ course['id'] }};
+</script>
+<script type="module">
+  import { startDanmaku } from "{{ url_for('static', filename='js/danmaku.js') }}";
+  import { startDanmakuWall } from "{{ url_for('static', filename='js/danmaku_wall.js') }}";
+  startDanmaku({ courseId, canLike: false });
+  startDanmakuWall({ courseId, canLike: false, isLecturer: true });
+  if (window.fetchHonors) window.fetchHonors(courseId);
+</script>
+{% endblock %}

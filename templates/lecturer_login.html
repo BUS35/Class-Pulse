@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %} · Lecturer Login{% endblock %}
+
+{% block content %}
+  <section class="card narrow">
+    <h1>Lecturer Login</h1>
+    <p class="muted">
+      Default password is <span class="pill">admin</span> unless you set
+      <code>CAMPUS_PULSE_ADMIN_PASSWORD</code>.
+    </p>
+
+    <form method="post" class="form">
+      <label>
+        Password
+        <input name="password" type="password" placeholder="Enter password" required>
+      </label>
+      <button class="btn" type="submit">Login</button>
+    </form>
+  </section>
+{% endblock %}

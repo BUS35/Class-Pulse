@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %} · Lecturer{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1>Lecturer Dashboard</h1>
+    <p class="muted">Create course spaces and manage student comments.</p>
+
+    <div class="grid">
+      <div>
+        <h2>Create a course</h2>
+        <form method="post" action="{{ url_for('lecturer_create_course') }}" class="form">
+          <label>
+            Course code
+            <input name="code" placeholder="e.g., CS205" required>
+          </label>
+          <label>
+            Course name
+            <input name="name" placeholder="e.g., Software Engineering" required>
+          </label>
+          <button class="btn" type="submit">Create</button>
+        </form>
+      </div>
+
+      <div>
+        <h2>Your courses</h2>
+        {% if courses %}
+          <ul class="list">
+            {% for c in courses %}
+              <li class="list-item">
+                <div>
+                  <strong>{{ c["code"] }}</strong> — {{ c["name"] }}
+                  <div class="muted small">Created: {{ c["created_at"] }}</div>
+                </div>
+                <a class="btn secondary" href="{{ url_for('lecturer_course', course_id=c['id']) }}">Open</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No courses yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-theme="dark">
+  <div id="danmaku-layer"></div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <a href="{{ url_for('index') }}">{{ app_name }}</a>
+        <span class="tag">Real-time lecture interaction</span>
+      </div>
+      <nav class="nav">
+        <button id="theme-toggle" class="btn secondary theme-toggle" type="button" aria-label="Toggle theme">Light Mode</button>
+        <a href="{{ url_for('about') }}">About</a>
+        {% if session.get('is_lecturer') %}
+          <a href="{{ url_for('lecturer_dashboard') }}">Lecturer</a>
+          <form class="inline" method="post" action="{{ url_for('lecturer_logout') }}">
+            <button class="linkbtn" type="submit">Logout</button>
+          </form>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-area">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <small>Prototype for coursework — built with Flask.</small>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const storageKey = 'class_pulse_theme';
+      const body = document.body;
+      const button = document.getElementById('theme-toggle');
+
+      function applyTheme(theme) {
+        body.setAttribute('data-theme', theme);
+        if (button) {
+          button.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+        }
+      }
+
+      const savedTheme = localStorage.getItem(storageKey) || 'dark';
+      applyTheme(savedTheme);
+
+      if (button) {
+        button.addEventListener('click', function () {
+          const nextTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+          localStorage.setItem(storageKey, nextTheme);
+          applyTheme(nextTheme);
+        });
+      }
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const layer = document.getElementById('danmaku-layer');
+      if (!layer) return;
+
+      const seen = new Map(); // key -> timestamp
+      const HOLD_AFTER_END_MS = 1200;   // 滚动结束后保留一小段时间再消失
+      const HARD_REMOVE_MS = 30000;     // 兜底删除，防止异常常驻
+      const SEEN_TTL_MS = 10 * 60 * 1000;
+
+      function keyOf(el) {
+        const ds = el.dataset || {};
+        const id =
+          ds.commentId ||
+          ds.id ||
+          el.getAttribute('data-comment-id') ||
+          el.getAttribute('data-id');
+        if (id) return `id:${id}`;
+
+        const txt = (el.textContent || '').trim();
+        if (txt) return `txt:${txt}`;
+        return `rand:${Math.random().toString(36).slice(2)}`;
+      }
+
+      function fadeAndRemove(el) {
+        if (!el || !el.parentNode) return;
+        el.style.transition = (el.style.transition ? el.style.transition + ', ' : '') + 'opacity .4s ease';
+        el.style.opacity = '0';
+        setTimeout(() => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 420);
+      }
+
+      function armLifecycle(el) {
+        if (el.__danmakuArmed) return;
+        el.__danmakuArmed = true;
+
+        // 强制只滚动一次，防止无限循环
+        el.style.animationIterationCount = '1';
+        if (!el.style.animationFillMode) el.style.animationFillMode = 'forwards';
+
+        const onEnd = () => setTimeout(() => fadeAndRemove(el), HOLD_AFTER_END_MS);
+        el.addEventListener('animationend', onEnd, { once: true });
+
+        // 兜底清理
+        setTimeout(() => fadeAndRemove(el), HARD_REMOVE_MS);
+      }
+
+      const observer = new MutationObserver((mutations) => {
+        const now = Date.now();
+
+        for (const m of mutations) {
+          for (const n of m.addedNodes) {
+            if (!(n instanceof HTMLElement)) continue;
+
+            const key = keyOf(n);
+            if (seen.has(key)) {
+              n.remove(); // 同一条弹幕重复出现，直接丢弃
+              continue;
+            }
+            seen.set(key, now);
+            armLifecycle(n);
+          }
+        }
+
+        // 清理 seen，防止集合无限增长
+        for (const [k, t] of seen) {
+          if (now - t > SEEN_TTL_MS) seen.delete(k);
+        }
+      });
+
+      observer.observe(layer, { childList: true });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

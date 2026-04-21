@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %} · Home{% endblock %}
+
+{% block content %}
+  <div class="grid">
+    <section class="card">
+      <h1>Student</h1>
+      <p class="muted">Join your course and post questions/comments in real time. Leave name empty to post as Anonymous.</p>
+
+      <form method="post" action="{{ url_for('student_join') }}" class="form">
+        <label>
+          Course code
+          <input name="course_code" placeholder="e.g., CS101" required>
+        </label>
+
+        <label>
+          Display name (optional)
+          <input name="display_name" placeholder="e.g., Alex">
+        </label>
+
+        <button class="btn" type="submit">Join & Enter Room</button>
+      </form>
+
+      {% if courses %}
+        <div class="divider"></div>
+        <p class="muted"><strong>Available course codes:</strong>
+          {% for c in courses %}
+            <span class="pill">{{ c["code"] }}</span>
+          {% endfor %}
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h1>Lecturer</h1>
+      <p class="muted">View all student comments and mark questions as resolved.</p>
+      <a class="btn secondary" href="{{ url_for('lecturer_login') }}">Lecturer Login</a>
+
+      <div class="divider"></div>
+      <h2>Quick demo</h2>
+      <ol class="muted">
+        <li>Student joins <span class="pill">CS101</span> and submits a comment.</li>
+        <li>Lecturer logs in and resolves it with a short note.</li>
+        <li>Student sees the resolved status (auto-refresh).</li>
+      </ol>
+    </section>
+  </div>
+{% endblock %}
